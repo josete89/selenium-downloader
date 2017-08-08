@@ -1,9 +1,14 @@
-var webdriver = require('selenium-webdriver'),
+const webdriver = require('selenium-webdriver'),
     By = webdriver.By,
     Key = webdriver.Key,
     until = webdriver.until;
 
-var driver = new webdriver.Builder()
+const { URL } = require('url');
+const R = require('ramda');
+
+const fs = require('fs')
+
+const driver = new webdriver.Builder()
     .forBrowser('firefox')
     .build();
 
@@ -19,7 +24,9 @@ var driver = new webdriver.Builder()
     driver.sleep(4000)
     driver.executeScript("window.scrollBy(0,document.body.scrollHeight)")
     driver.sleep(4000)
-    driver.findElements(By.tagName('img')).then( function (elements){
+    driver.executeScript("window.scrollBy(0,document.body.scrollHeight)")
+    driver.sleep(4000)
+    driver.findElements(By.className('rg_l')).then( function (elements){
       console.log("Number of images -> "+elements.length)
         processImages(elements)
     })
@@ -27,8 +34,18 @@ var driver = new webdriver.Builder()
     //driver.quit();
 
 var processImages = function (elements) {
-  var urls = elements.map( function (element) { return element.getAttribute("src") } )
+  var urls = elements.map( function (element) { return element.getAttribute("href") } )
   Promise.all(urls).then(function(results) {
-    console.log(results)
-  })  
+    let res = results.map(mapUrlToImg)
+    fs.writeFile('./data.json', JSON.stringify(res), (err) => {
+        if (err) throw err;
+        console.log('The file has been saved!');
+    });
+  })
+}
+
+var mapUrlToImg = function(urlEncoded) {
+    let url = new URL(decodeURIComponent(urlEncoded))
+    let imgUrl =  url.searchParams.get('imgurl')
+    return { url:imgUrl}
 }
